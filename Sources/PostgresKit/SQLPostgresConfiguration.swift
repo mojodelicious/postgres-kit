@@ -78,9 +78,23 @@ public struct SQLPostgresConfiguration: Sendable {
     /// [tlsconfig]:
     /// https://swiftpackageindex.com/apple/swift-nio-ssl/documentation/niossl/tlsconfiguration
     public init(url: URL) throws {
-        guard let comp = URLComponents(url: url, resolvingAgainstBaseURL: true), let username = comp.user else {
+        
+        guard let comp = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
+            print("Could not create URL Components from URL: \(url.absoluteString)")
             throw URLError(.badURL, userInfo: [NSURLErrorFailingURLErrorKey: url, NSURLErrorFailingURLStringErrorKey: url.absoluteString])
         }
+            
+        guard let username = comp.user else {
+            print("Components has no user")
+            throw URLError(.badURL, userInfo: [NSURLErrorFailingURLErrorKey: url, NSURLErrorFailingURLStringErrorKey: url.absoluteString])
+        }
+        
+        print("COMP SCHEME: \(comp.scheme ?? "Nil")")
+        print("COMP USER: \(comp.user ?? "Nil")")
+        print("COMP PASS: \(comp.password ?? "Nil")")
+        print("COMP HOST: \(comp.host ?? "Nil")")
+        print("COMP PORT: \(comp.port ?? 0)")
+        print("COMP PATH: \(comp.path)")
         
         func decideTLSConfig(from queryItems: [URLQueryItem], defaultMode: String) throws -> PostgresConnection.Configuration.TLS {
             switch queryItems.last(where: { ["tlsmode", "sslmode", "ssl", "tls"].contains($0.name.lowercased()) })?.value ?? defaultMode {
