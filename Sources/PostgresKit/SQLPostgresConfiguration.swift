@@ -99,12 +99,16 @@ public struct SQLPostgresConfiguration: Sendable {
         func decideTLSConfig(from queryItems: [URLQueryItem], defaultMode: String) throws -> PostgresConnection.Configuration.TLS {
             switch queryItems.last(where: { ["tlsmode", "sslmode", "ssl", "tls"].contains($0.name.lowercased()) })?.value ?? defaultMode {
             case "verify-full", "verify-ca", "require":
+                print("TLS Mode: verify/require")
                 return try .require(.init(configuration: .makeClientConfiguration()))
             case "prefer", "allow", "true":
+                print("TLS Mode: prefer/true")
                 return try .prefer(.init(configuration: .makeClientConfiguration()))
             case "disable", "false":
+                print("TLS Mode: disable")
                 return .disable
             default:
+                print("Could not determine tls mode")
                 throw URLError(.badURL, userInfo: [NSURLErrorFailingURLErrorKey: url, NSURLErrorFailingURLStringErrorKey: url.absoluteString])
             }
         }
@@ -112,6 +116,7 @@ public struct SQLPostgresConfiguration: Sendable {
         switch comp.scheme {
         case "postgres", "postgres+tcp", "postgresql", "postgresql+tcp":
             guard let hostname = comp.host, !hostname.isEmpty else {
+                print("Have scheme, but hostname is nil or empty")
                 throw URLError(.badURL, userInfo: [NSURLErrorFailingURLErrorKey: url, NSURLErrorFailingURLStringErrorKey: url.absoluteString])
             }
             self.init(
@@ -122,12 +127,14 @@ public struct SQLPostgresConfiguration: Sendable {
             )
         case "postgres+uds", "postgresql+uds":
             guard (comp.host?.isEmpty ?? true || comp.host == "localhost"), comp.port == nil, !comp.path.isEmpty, comp.path != "/" else {
+                print("Have scheme, but hostname is nil or empty, UDS case")
                 throw URLError(.badURL, userInfo: [NSURLErrorFailingURLErrorKey: url, NSURLErrorFailingURLStringErrorKey: url.absoluteString])
             }
             var coreConfig = PostgresConnection.Configuration(unixSocketPath: comp.path, username: username, password: comp.password, database: comp.fragment)
             coreConfig.tls = try decideTLSConfig(from: comp.queryItems ?? [], defaultMode: "disable")
             self.init(coreConfiguration: coreConfig)
         default:
+            print("Could not determine scheme")
             throw URLError(.badURL, userInfo: [NSURLErrorFailingURLErrorKey: url, NSURLErrorFailingURLStringErrorKey: url.absoluteString])
         }
     }
